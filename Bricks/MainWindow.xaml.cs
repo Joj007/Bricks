@@ -18,6 +18,7 @@ namespace Bricks
     {
         ObservableCollection<Termek> termekek = new();
         string fileName;
+        string folderName;
         public MainWindow()
         {
             InitializeComponent();
@@ -26,9 +27,29 @@ namespace Bricks
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            Beolvas();
-
             
+            var dialog = new OpenFolderDialog()
+            {
+                Title = "Select Folder",
+                Multiselect = false
+            };
+
+            folderName = "";
+            if (dialog.ShowDialog() == true)
+            {
+                folderName = dialog.FolderName;
+            }
+            MessageBox.Show(folderName);
+            DirectoryInfo d = new DirectoryInfo(folderName);
+            FileInfo[] Files = d.GetFiles("*.bsx"); //Getting Text files
+
+            foreach (FileInfo file in Files)
+            {
+                lbFajlok.Items.Add(file.Name);
+            }
+            //Beolvas();
+
+
         }
 
         private void Beolvas()
@@ -51,7 +72,7 @@ namespace Bricks
         {
             if (File.ReadAllLines(fileName).ToList() == null)
             {
-                Beolvas();
+                return;
             }
             List<string> sorok = File.ReadAllLines(fileName).ToList();
 
@@ -75,15 +96,22 @@ namespace Bricks
                         {
                             if (ujTermerk.Name.StartsWith(txtSzuroNev.Text) && ujTermerk.Id.StartsWith(txtSzuroId.Text))
                             {
-                                if (!mode && (ujTermerk.CategoryName == cbKategoria.SelectedItem.ToString() || cbKategoria.SelectedIndex==-1))
+                                if (cbKategoria.SelectedIndex != -1)
                                 {
-                                    termekek.Add(ujTermerk);
-                                }
-                                if (mode)
-                                {
-                                    termekek.Add(ujTermerk);
-                                }
+                                    if (!mode && (ujTermerk.CategoryName == cbKategoria.SelectedItem.ToString() || cbKategoria.SelectedIndex == -1))
+                                    {
+                                        termekek.Add(ujTermerk);
+                                    }
+                                    if (mode)
+                                    {
+                                        termekek.Add(ujTermerk);
+                                    }
 
+                                }
+                            else
+                            {
+                                termekek.Add(ujTermerk);
+                            }
                             }
                         }
                         else
@@ -106,14 +134,32 @@ namespace Bricks
             dgTermekLista.ItemsSource = termekek;
             Betolt(fileName);
         }
-
+        private void Reset()
+        {
+            if (termekek.Count != 0)
+            {
+                var kategoriak = termekek.DistinctBy(n => n.CategoryName);
+                cbKategoria.ItemsSource = kategoriak.Select(n => n.CategoryName);
+                cbKategoria.SelectedIndex = -1;
+                txtSzuroId.Text = "";
+                txtSzuroNev.Text = "";
+                termekek.Clear();
+            }
+        }
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            var kategoriak = termekek.DistinctBy(n => n.CategoryName);
-            cbKategoria.ItemsSource = kategoriak.Select(n => n.CategoryName);
-            txtSzuroId.Text = "";
-            txtSzuroNev.Text = "";
-            Betolt(fileName);
+            Reset();
+            if (lbFajlok.SelectedIndex!=-1)
+            {
+                Betolt(folderName + "/" + lbFajlok.SelectedItem.ToString());
+            }
+            
+        }
+
+        private void lbFajlok_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            Reset();
+            Betolt(folderName+"/"+lbFajlok.SelectedItem.ToString());
         }
     }
 }
